@@ -1,4 +1,4 @@
-(ns clucene
+(ns clucy
   (:use clojure.contrib.java-utils)
   (:import org.apache.lucene.document.Document)
   (:import (org.apache.lucene.document Field, Field$Store, Field$Index))
