@@ -26,7 +26,7 @@
 (defn- index-writer
   "Create an IndexWriter."
   [index]
-  (IndexWriter. index *analyzer* true IndexWriter$MaxFieldLength/UNLIMITED))
+  (IndexWriter. index *analyzer* IndexWriter$MaxFieldLength/UNLIMITED))
 
 (defn- add-field
   "Add a Field to a Document."
@@ -55,7 +55,8 @@
   [index & maps]
   (with-open [writer (index-writer index)]
     (doseq [m maps]
-      (.addDocument writer (map->document m)))))
+      (.addDocument writer (map->document m)))
+    (.optimize writer)))
 
 (defn- document->map
   "Turn a Document object into a map."
