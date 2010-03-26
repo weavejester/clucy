@@ -1,14 +1,14 @@
-(ns clucy
+(ns clucy.core
   (:use clojure.contrib.java-utils)
-  (:import java.io.File)
-  (:import org.apache.lucene.document.Document)
-  (:import (org.apache.lucene.document Field, Field$Store, Field$Index))
-  (:import (org.apache.lucene.index IndexWriter, IndexWriter$MaxFieldLength))
-  (:import org.apache.lucene.analysis.standard.StandardAnalyzer)
-  (:import org.apache.lucene.queryParser.QueryParser)
-  (:import org.apache.lucene.search.IndexSearcher)
-  (:import (org.apache.lucene.store RAMDirectory, NIOFSDirectory))
-  (:import org.apache.lucene.util.Version))
+  (:import java.io.File
+           org.apache.lucene.document.Document
+           (org.apache.lucene.document Field Field$Store Field$Index)
+           (org.apache.lucene.index IndexWriter IndexWriter$MaxFieldLength)
+           org.apache.lucene.analysis.standard.StandardAnalyzer
+           org.apache.lucene.queryParser.QueryParser
+           org.apache.lucene.search.IndexSearcher
+           (org.apache.lucene.store RAMDirectory NIOFSDirectory)
+           org.apache.lucene.util.Version))
 
 (def *version*  Version/LUCENE_30)
 (def *analyzer* (StandardAnalyzer. *version*))
@@ -51,7 +51,7 @@
     document))
 
 (defn add
-  "Add hash-maps to the search index"
+  "Add hash-maps to the search index."
   [index & maps]
   (with-open [writer (index-writer index)]
     (doseq [m maps]
