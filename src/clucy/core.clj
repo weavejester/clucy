@@ -8,7 +8,12 @@
            org.apache.lucene.queryParser.QueryParser
            org.apache.lucene.search.IndexSearcher
            (org.apache.lucene.store RAMDirectory NIOFSDirectory)
-           org.apache.lucene.util.Version))
+           org.apache.lucene.util.Version
+           org.apache.lucene.search.BooleanQuery
+           org.apache.lucene.search.BooleanClause
+           org.apache.lucene.search.BooleanClause$Occur
+           org.apache.lucene.index.Term
+           org.apache.lucene.search.TermQuery))
 
 (def *version*  Version/LUCENE_30)
 (def *analyzer* (StandardAnalyzer. *version*))
@@ -58,6 +63,21 @@
       (.addDocument writer (map->document m)))
     (.optimize writer)))
 
+(defn delete
+  "Deletes hash-maps from the search index."
+  [index & maps]
+  (with-open [writer (index-writer index)]
+    (doseq [m maps]
+      (let [query (BooleanQuery.)]
+        (doseq [[key value] m]
+          (.add query
+                (BooleanClause.
+                 (TermQuery. (Term. (.toLowerCase (as-str key))
+                                    (.toLowerCase (as-str value))))
+                 BooleanClause$Occur/MUST)))
+        (.deleteDocuments writer query)))
+    (.optimize writer)))
+
 (defn- document->map
   "Turn a Document object into a map."
   [document]
@@ -78,3 +98,15 @@
         (doall
           (for [hit (.scoreDocs hits)]
             (document->map (.doc searcher (.doc hit)))))))))
+
+(defn search-and-delete
+  "Search the supplied index with a query string and then delete all
+of the results."
+  ([index query max-results]
+    (search-and-delete index query max-results :_content))
+  ([index query max-results default-field]
+    (with-open [writer (index-writer index)]
+      (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
+            query  (.parse parser query)]
+        (.deleteDocuments writer query))
+      (.optimize writer))))
