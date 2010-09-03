@@ -18,6 +18,9 @@
 (def *version*  Version/LUCENE_30)
 (def *analyzer* (StandardAnalyzer. *version*))
 
+;; flag to indicate a default "_content" field should be maintained
+(def *content* true)
+
 (defn memory-index
   "Create a new index in RAM."
   []
@@ -35,24 +38,44 @@
 
 (defn- add-field
   "Add a Field to a Document."
-  [document key value]
-  (.add document
-    (Field. (as-str key) (as-str value)
-            Field$Store/YES
-            Field$Index/ANALYZED)))
+  ([document key value]
+     (add-field document key value {}))
+
+  ([document key value meta-map]
+       (.add document
+             (Field. (as-str key) (as-str value)
+                     (if (and meta-map (= false (:stored meta-map)))
+                       Field$Store/NO
+                       Field$Store/YES)
+                     (if (and meta-map (= false (:indexed meta-map)))
+                       Field$Index/NO
+                       Field$Index/ANALYZED)))))
+
+(defn- map-stored
+  "Returns a hash-map containing all of the values in the map that
+  will be stored in the search index."
+  [map-in]
+  (merge {}
+         (filter (complement nil?)
+                 (map (fn [item]
+                        (if (or (= nil (meta map-in))
+                                (not= false
+                                      (:stored ((first item) (meta map-in)))))
+                          item)) map-in))))
 
 (defn- concat-values
-  "Concatenate all the maps values into a single string."
-  [map]
-  (apply str (interpose " " (vals map))))
+  "Concatenate all the maps values being stored into a single string."
+  [map-in]
+  (apply str (interpose " " (vals (map-stored map-in)))))
 
 (defn- map->document
   "Create a Document from a map."
   [map]
   (let [document (Document.)]
     (doseq [[key value] map]
-      (add-field document key value))
-    (add-field document :_content (concat-values map))
+      (add-field document key value (key (meta map))))
+    (if *content*
+      (add-field document :_content (concat-values map)))
     document))
 
 (defn add
@@ -81,15 +104,25 @@
 (defn- document->map
   "Turn a Document object into a map."
   [document]
-  (-> (into {}
-        (for [f (.getFields document)]
-          [(keyword (.name f)) (.stringValue f)]))
-      (dissoc :_content)))
+  (with-meta
+    (-> (into {}
+              (for [f (.getFields document)]
+                [(keyword (.name f)) (.stringValue f)]))
+        (dissoc :_content))
+    (-> (into {}
+              (for [f (.getFields document)]
+                [(keyword (.name f))
+                 {:indexed (.isIndexed f)
+                  :stored (.isStored f)
+                  :tokenized (.isTokenized f)}]))
+        (dissoc :_content))))
 
 (defn search
   "Search the supplied index with a query string."
   ([index query max-results]
-    (search index query max-results :_content))
+     (if *content*
+       (search index query max-results :_content)
+       (throw (Exception. "No default search field specified"))))
   ([index query max-results default-field]
     (with-open [searcher (IndexSearcher. index)]
       (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
@@ -102,9 +135,11 @@
 (defn search-and-delete
   "Search the supplied index with a query string and then delete all
 of the results."
-  ([index query max-results]
-    (search-and-delete index query max-results :_content))
-  ([index query max-results default-field]
+  ([index query]
+     (if *content*
+       (search-and-delete index query :_content)
+       (throw (Exception. "No default search field specified"))))
+  ([index query default-field]
     (with-open [writer (index-writer index)]
       (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
             query  (.parse parser query)]
