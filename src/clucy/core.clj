@@ -56,7 +56,8 @@
   (if (<= (:optimize-frequency @index) (:updates @index))
     (with-open [writer (index-writer index)]
       (.optimize writer)
-      (swap! index assoc :updates 0))))
+      (swap! index assoc :updates 0))
+    index))
 
 (defn- add-field
   "Add a Field to a Document."
