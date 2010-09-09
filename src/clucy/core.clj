@@ -17,6 +17,11 @@
 
 (def *version*  Version/LUCENE_30)
 (def *analyzer* (StandardAnalyzer. *version*))
+(def *optimize-frequency* 1)
+
+(defstruct
+    #^{:doc "Structure for clucy indexes."}
+    clucy-index :index :optimize-frequency :updates)
 
 ;; flag to indicate a default "_content" field should be maintained
 (def *content* true)
@@ -24,17 +29,34 @@
 (defn memory-index
   "Create a new index in RAM."
   []
-  (RAMDirectory.))
+  (atom (struct-map clucy-index
+          :index (RAMDirectory.)
+          :optimize-frequency *optimize-frequency*
+          :updates 0)))
 
 (defn disk-index
   "Create a new index in a directory on disk."
   [dir-path]
-  (NIOFSDirectory. (File. dir-path)))
+  (atom (struct-map clucy-index
+          :index (NIOFSDirectory. (File. dir-path))
+          :optimize-frequency *optimize-frequency*
+          :updates 0)))
 
 (defn- index-writer
   "Create an IndexWriter."
   [index]
-  (IndexWriter. index *analyzer* IndexWriter$MaxFieldLength/UNLIMITED))
+  (IndexWriter. (:index @index)
+                *analyzer*
+                IndexWriter$MaxFieldLength/UNLIMITED))
+
+(defn- optimize-index
+  "Optimized the provided index if the number of updates matches or
+  exceeds the optimize frequency."
+  [index]
+  (if (<= (:optimize-frequency @index) (:updates @index))
+    (with-open [writer (index-writer index)]
+      (.optimize writer)
+      (swap! index assoc :updates 0))))
 
 (defn- add-field
   "Add a Field to a Document."
@@ -83,8 +105,9 @@
   [index & maps]
   (with-open [writer (index-writer index)]
     (doseq [m maps]
-      (.addDocument writer (map->document m)))
-    (.optimize writer)))
+      (swap! index assoc :updates (inc (:updates @index)))
+      (.addDocument writer (map->document m))))
+  (optimize-index index))
 
 (defn delete
   "Deletes hash-maps from the search index."
@@ -98,8 +121,9 @@
                  (TermQuery. (Term. (.toLowerCase (as-str key))
                                     (.toLowerCase (as-str value))))
                  BooleanClause$Occur/MUST)))
-        (.deleteDocuments writer query)))
-    (.optimize writer)))
+        (.deleteDocuments writer query))
+      (swap! index assoc :updates (inc (:updates @index)))))
+  (optimize-index index))
 
 (defn- document->map
   "Turn a Document object into a map."
@@ -124,7 +148,7 @@
        (search index query max-results :_content)
        (throw (Exception. "No default search field specified"))))
   ([index query max-results default-field]
-    (with-open [searcher (IndexSearcher. index)]
+    (with-open [searcher (IndexSearcher. (:index @index))]
       (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
             query  (.parse parser query)
             hits   (.search searcher query max-results)]
@@ -143,5 +167,6 @@ of the results."
     (with-open [writer (index-writer index)]
       (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
             query  (.parse parser query)]
-        (.deleteDocuments writer query))
-      (.optimize writer))))
+        (.deleteDocuments writer query)
+        (swap! index assoc :updates (inc (:updates @index)))))
+    (optimize-index index)))
