@@ -1,3 +1,4 @@
-lib
 classes
-clucy.jar
+lib
+clucy*.jar
+pom.xml
