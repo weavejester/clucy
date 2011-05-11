@@ -137,24 +137,26 @@
 
 (defn- document->map
   "Turn a Document object into a map."
-  [document]
-  (with-meta
-    (-> (into {}
-              (for [f (.getFields document)]
-                [(keyword (.name f)) (.stringValue f)]))
-        (dissoc :_content))
-    (-> (into {}
-              (for [f (.getFields document)]
-                [(keyword (.name f))
-                 {:indexed (.isIndexed f)
-                  :stored (.isStored f)
-                  :tokenized (.isTokenized f)}]))
-        (dissoc :_content))))
+  ([document]
+     (document->map document identity))
+  ([document highlighter]
+     (with-meta
+       (-> (into {}
+                 (for [f (.getFields document)]
+                   [(keyword (.name f)) (.stringValue f)]))
+           highlighter
+           (dissoc :_content))
+       (-> (into {}
+                 (for [f (.getFields document)]
+                   [(keyword (.name f))
+                    {:indexed (.isIndexed f)
+                     :stored (.isStored f)
+                     :tokenized (.isTokenized f)}]))
+           (dissoc :_content)))))
 
 (defn- make-highlighter
   "Create a highlighter function which will take a map and return the map with
-highlighted results appended. Highlighting is configured by passing the config
-map."
+highlighted results appended."
   [query searcher config]
   (if config
     (let [indexReader (.getIndexReader searcher)
@@ -193,7 +195,7 @@ map."
               highlighter (make-highlighter query searcher highlight)]
           (doall
            (for [hit (.scoreDocs hits)]
-             (highlighter (document->map (.doc searcher (.doc hit)))))))))))
+             (document->map (.doc searcher (.doc hit)) highlighter))))))))
 
 (defn search-and-delete
   "Search the supplied index with a query string and then delete all
