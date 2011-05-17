@@ -137,33 +137,36 @@
 
 (defn- document->map
   "Turn a Document object into a map."
-  ([document]
-     (document->map document identity))
-  ([document highlighter]
-     (with-meta
-       (-> (into {}
-                 (for [f (.getFields document)]
-                   [(keyword (.name f)) (.stringValue f)]))
-           highlighter
-           (dissoc :_content))
-       (-> (into {}
-                 (for [f (.getFields document)]
-                   [(keyword (.name f))
-                    {:indexed (.isIndexed f)
-                     :stored (.isStored f)
-                     :tokenized (.isTokenized f)}]))
-           (dissoc :_content)))))
+  ([document score]
+     (document->map document score (constantly nil)))
+  ([document score highlighter]
+     (let [m (-> (into {}
+                   (for [f (.getFields document)]
+                     [(keyword (.name f)) (.stringValue f)])))
+           fragments (highlighter m)
+           m (dissoc m :_content)]
+       (with-meta
+         m
+         (-> (into {}
+                   (for [f (.getFields document)]
+                     [(keyword (.name f))
+                      {:indexed (.isIndexed f)
+                       :stored (.isStored f)
+                       :tokenized (.isTokenized f)}]))
+             (assoc :_fragments fragments)
+             (assoc :_score score)
+             (dissoc :_content))))))
 
 (defn- make-highlighter
-  "Create a highlighter function which will take a map and return the map with
-highlighted results appended."
+  "Create a highlighter function which will take a map and return highlighted
+fragments."
   [query searcher config]
   (if config
     (let [indexReader (.getIndexReader searcher)
           scorer (QueryScorer. (.rewrite query indexReader))
-          config (merge {:max-fragments 5
+          config (merge {:field :_content
+                         :max-fragments 5
                          :separator "..."
-                         :fragments-key :fragments
                          :pre "<b>"
                          :post "</b>"}
                         config)
@@ -173,14 +176,13 @@ highlighted results appended."
         (let [str (field m)
               token-stream (.tokenStream *analyzer*
                                          (name field)
-                                         (StringReader. str))
-              best-fragments (.getBestFragments highlighter
-                                                token-stream
-                                                str
-                                                max-fragments
-                                                separator)]
-          (assoc m fragments-key best-fragments))))
-    identity))
+                                         (StringReader. str))]
+          (.getBestFragments highlighter
+                             token-stream
+                             str
+                             max-fragments
+                             separator))))
+    (constantly nil)))
 
 (defn search
   "Search the supplied index with a query string."
@@ -195,7 +197,9 @@ highlighted results appended."
               highlighter (make-highlighter query searcher highlight)]
           (doall
            (for [hit (.scoreDocs hits)]
-             (document->map (.doc searcher (.doc hit)) highlighter))))))))
+             (document->map (.doc searcher (.doc hit))
+                            (.score hit)
+                            highlighter))))))))
 
 (defn search-and-delete
   "Search the supplied index with a query string and then delete all

@@ -43,10 +43,14 @@
 
   (testing "search fn with highlighting"
     (let [index (memory-index)
-          config {:field :name
-                  :max-fragments 5
-                  :separator "..."
-                  :fragments-key :best}]
+          config {:field :name}]
       (doseq [person people] (add index person))
-      (is (= (map :best (search index "name:mary" 10 :highlight config))
-             ["<b>Mary</b>" "<b>Mary</b> Lou"])))))
+      (is (= (map #(-> % meta :_fragments)
+                  (search index "name:mary" 10 :highlight config))
+             ["<b>Mary</b>" "<b>Mary</b> Lou"]))))
+
+    (testing "search fn returns scores in metadata"
+    (let [index (memory-index)]
+      (doseq [person people] (add index person))
+      (is (true? (every? #(> % 0) (map #(-> % meta :_score)
+                                      (search index "name:mary" 10))))))))
