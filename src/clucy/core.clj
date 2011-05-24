@@ -143,7 +143,7 @@
      (let [m (-> (into {}
                    (for [f (.getFields document)]
                      [(keyword (.name f)) (.stringValue f)])))
-           fragments (highlighter m)
+           fragments (highlighter m) ; so that we can highlight :_content
            m (dissoc m :_content)]
        (with-meta
          m
