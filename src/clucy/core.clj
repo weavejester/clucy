@@ -1,6 +1,7 @@
 (ns clucy.core
   (:require [clojure.java.io :as io])
   (:import java.io.File
+           java.io.StringReader
            org.apache.lucene.document.Document
            (org.apache.lucene.document Field Field$Store Field$Index)
            (org.apache.lucene.index IndexWriter IndexWriter$MaxFieldLength)
@@ -12,6 +13,9 @@
            org.apache.lucene.search.BooleanQuery
            org.apache.lucene.search.BooleanClause
            org.apache.lucene.search.BooleanClause$Occur
+           org.apache.lucene.search.highlight.QueryScorer
+           org.apache.lucene.search.highlight.Highlighter
+           org.apache.lucene.search.highlight.SimpleHTMLFormatter
            org.apache.lucene.index.Term
            org.apache.lucene.search.TermQuery))
 
@@ -133,34 +137,69 @@
 
 (defn- document->map
   "Turn a Document object into a map."
-  [document]
-  (with-meta
-    (-> (into {}
-              (for [f (.getFields document)]
-                [(keyword (.name f)) (.stringValue f)]))
-        (dissoc :_content))
-    (-> (into {}
-              (for [f (.getFields document)]
-                [(keyword (.name f))
-                 {:indexed (.isIndexed f)
-                  :stored (.isStored f)
-                  :tokenized (.isTokenized f)}]))
-        (dissoc :_content))))
+  ([document score]
+     (document->map document score (constantly nil)))
+  ([document score highlighter]
+     (let [m (-> (into {}
+                   (for [f (.getFields document)]
+                     [(keyword (.name f)) (.stringValue f)])))
+           fragments (highlighter m) ; so that we can highlight :_content
+           m (dissoc m :_content)]
+       (with-meta
+         m
+         (-> (into {}
+                   (for [f (.getFields document)]
+                     [(keyword (.name f))
+                      {:indexed (.isIndexed f)
+                       :stored (.isStored f)
+                       :tokenized (.isTokenized f)}]))
+             (assoc :_fragments fragments)
+             (assoc :_score score)
+             (dissoc :_content))))))
+
+(defn- make-highlighter
+  "Create a highlighter function which will take a map and return highlighted
+fragments."
+  [query searcher config]
+  (if config
+    (let [indexReader (.getIndexReader searcher)
+          scorer (QueryScorer. (.rewrite query indexReader))
+          config (merge {:field :_content
+                         :max-fragments 5
+                         :separator "..."
+                         :pre "<b>"
+                         :post "</b>"}
+                        config)
+          {:keys [field max-fragments separator fragments-key pre post]} config
+          highlighter (Highlighter. (SimpleHTMLFormatter. pre post) scorer)]
+      (fn [m]
+        (let [str (field m)
+              token-stream (.tokenStream *analyzer*
+                                         (name field)
+                                         (StringReader. str))]
+          (.getBestFragments highlighter
+                             token-stream
+                             str
+                             max-fragments
+                             separator))))
+    (constantly nil)))
 
 (defn search
   "Search the supplied index with a query string."
-  ([index query max-results]
-     (if *content*
-       (search index query max-results :_content)
-       (throw (Exception. "No default search field specified"))))
-  ([index query max-results default-field]
-    (with-open [searcher (IndexSearcher. (:index @index))]
-      (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
-            query  (.parse parser query)
-            hits   (.search searcher query max-results)]
-        (doall
-          (for [hit (.scoreDocs hits)]
-            (document->map (.doc searcher (.doc hit)))))))))
+  [index query max-results & {:keys [highlight default-field]}]
+  (if (every? false? [default-field *content*])
+    (throw (Exception. "No default search field specified"))
+    (let [default-field (or default-field :_content)]
+      (with-open [searcher (IndexSearcher. (:index @index))]
+        (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
+              query  (.parse parser query)
+              hits   (.search searcher query max-results)
+              highlighter (make-highlighter query searcher highlight)]
+          (doall
+           (for [hit (.scoreDocs hits)]
+             (document->map (.doc searcher (.doc hit))
+                            (.score hit)
+                            highlighter))))))))
 
 (defn search-and-delete
   "Search the supplied index with a query string and then delete all

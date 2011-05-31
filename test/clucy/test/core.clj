@@ -39,4 +39,18 @@
     (let [index (memory-index)]
       (doseq [person people] (add index person))
       (search-and-delete index "name:mary")
-      (is (== 0 (count (search index "name:mary" 10)))))))
+      (is (== 0 (count (search index "name:mary" 10))))))
+
+  (testing "search fn with highlighting"
+    (let [index (memory-index)
+          config {:field :name}]
+      (doseq [person people] (add index person))
+      (is (= (map #(-> % meta :_fragments)
+                  (search index "name:mary" 10 :highlight config))
+             ["<b>Mary</b>" "<b>Mary</b> Lou"]))))
+
+    (testing "search fn returns scores in metadata"
+    (let [index (memory-index)]
+      (doseq [person people] (add index person))
+      (is (true? (every? #(> % 0) (map #(-> % meta :_score)
+                                      (search index "name:mary" 10))))))))
