@@ -1,28 +1,22 @@
 (ns clucy.core
   (:require [clojure.java.io :as io])
-  (:import java.io.File
-           java.io.StringReader
-           org.apache.lucene.document.Document
-           (org.apache.lucene.document Field Field$Store Field$Index)
-           (org.apache.lucene.index IndexWriter IndexWriter$MaxFieldLength)
-           org.apache.lucene.analysis.standard.StandardAnalyzer
-           org.apache.lucene.queryParser.QueryParser
-           org.apache.lucene.search.IndexSearcher
-           (org.apache.lucene.store RAMDirectory NIOFSDirectory)
-           org.apache.lucene.util.Version
-           org.apache.lucene.search.BooleanQuery
-           org.apache.lucene.search.BooleanClause
-           org.apache.lucene.search.BooleanClause$Occur
-           org.apache.lucene.search.highlight.QueryScorer
-           org.apache.lucene.search.highlight.Highlighter
-           org.apache.lucene.search.highlight.SimpleHTMLFormatter
-           org.apache.lucene.index.Term
-           org.apache.lucene.search.TermQuery))
+  (:import (java.io StringReader)
+           (org.apache.lucene.analysis.standard StandardAnalyzer)
+           (org.apache.lucene.document Document Field Field$Index Field$Store)
+           (org.apache.lucene.index IndexWriter IndexWriter$MaxFieldLength Term)
+           (org.apache.lucene.queryParser QueryParser)
+           (org.apache.lucene.search BooleanClause BooleanClause$Occur
+                                     BooleanQuery IndexSearcher TermQuery)
+           (org.apache.lucene.search.highlight Highlighter QueryScorer
+                                               SimpleHTMLFormatter)
+           (org.apache.lucene.store NIOFSDirectory RAMDirectory)
+           (org.apache.lucene.util Version)))
 
-(def *version*  Version/LUCENE_30)
+(def *version* Version/LUCENE_30)
 (def *analyzer* (StandardAnalyzer. *version*))
 (def *optimize-frequency* 1)
 
+;; To avoid a dependency on either contrib or 1.2+
 (defn as-str [x]
   (if (keyword? x)
     (name x)
@@ -74,14 +68,14 @@
      (add-field document key value {}))
 
   ([document key value meta-map]
-       (.add document
-             (Field. (as-str key) (as-str value)
-                     (if (and meta-map (= false (:stored meta-map)))
-                       Field$Store/NO
-                       Field$Store/YES)
-                     (if (and meta-map (= false (:indexed meta-map)))
-                       Field$Index/NO
-                       Field$Index/ANALYZED)))))
+     (.add document
+           (Field. (as-str key) (as-str value)
+                   (if (and meta-map (= false (:stored meta-map)))
+                     Field$Store/NO
+                     Field$Store/YES)
+                   (if (and meta-map (= false (:indexed meta-map)))
+                     Field$Index/NO
+                     Field$Index/ANALYZED)))))
 
 (defn- map-stored
   "Returns a hash-map containing all of the values in the map that
@@ -140,21 +134,18 @@
   ([document score]
      (document->map document score (constantly nil)))
   ([document score highlighter]
-     (let [m (-> (into {}
-                   (for [f (.getFields document)]
-                     [(keyword (.name f)) (.stringValue f)])))
+     (let [m (into {} (for [f (.getFields document)]
+                        [(keyword (.name f)) (.stringValue f)]))
            fragments (highlighter m) ; so that we can highlight :_content
            m (dissoc m :_content)]
        (with-meta
          m
          (-> (into {}
                    (for [f (.getFields document)]
-                     [(keyword (.name f))
-                      {:indexed (.isIndexed f)
-                       :stored (.isStored f)
-                       :tokenized (.isTokenized f)}]))
-             (assoc :_fragments fragments)
-             (assoc :_score score)
+                     [(keyword (.name f)) {:indexed (.isIndexed f)
+                                           :stored (.isStored f)
+                                           :tokenized (.isTokenized f)}]))
+             (assoc :_fragments fragments :_score score)
              (dissoc :_content))))))
 
 (defn- make-highlighter
@@ -209,9 +200,9 @@ of the results."
        (search-and-delete index query :_content)
        (throw (Exception. "No default search field specified"))))
   ([index query default-field]
-    (with-open [writer (index-writer index)]
-      (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
-            query  (.parse parser query)]
-        (.deleteDocuments writer query)
-        (swap! index assoc :updates (inc (:updates @index)))))
-    (optimize-index index)))
+     (with-open [writer (index-writer index)]
+       (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
+             query  (.parse parser query)]
+         (.deleteDocuments writer query)
+         (swap! index assoc :updates (inc (:updates @index)))))
+     (optimize-index index)))
