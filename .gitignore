@@ -2,3 +2,4 @@ classes
 lib
 clucy*.jar
 pom.xml
+/.lein-failures
