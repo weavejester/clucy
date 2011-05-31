@@ -187,10 +187,12 @@ fragments."
               hits   (.search searcher query max-results)
               highlighter (make-highlighter query searcher highlight)]
           (doall
-           (for [hit (.scoreDocs hits)]
-             (document->map (.doc searcher (.doc hit))
-                            (.score hit)
-                            highlighter))))))))
+           (with-meta (for [hit (.scoreDocs hits)]
+                        (document->map (.doc searcher (.doc hit))
+                                       (.score hit)
+                                       highlighter))
+             {:_total-hits (.totalHits hits)
+              :_max-score (.getMaxScore hits)})))))))
 
 (defn search-and-delete
   "Search the supplied index with a query string and then delete all

@@ -49,8 +49,11 @@
                   (search index "name:mary" 10 :highlight config))
              ["<b>Mary</b>" "<b>Mary</b> Lou"]))))
 
-    (testing "search fn returns scores in metadata"
-    (let [index (memory-index)]
-      (doseq [person people] (add index person))
-      (is (true? (every? #(> % 0) (map #(-> % meta :_score)
-                                      (search index "name:mary" 10))))))))
+  (testing "search fn returns scores in metadata"
+    (let [index (memory-index)
+          _ (doseq [person people] (add index person))
+          results (search index "name:mary" 10)]
+      (is (true? (every? pos? (map (comp :_score meta) results))))
+      (is (= 2 (:_total-hits (meta results))))
+      (is (pos? (:_max-score (meta results))))
+      (is (= (count people) (:_total-hits (meta (search index "*:*" 2))))))))
