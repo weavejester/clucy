@@ -3,3 +3,10 @@ lib
 clucy*.jar
 pom.xml
 /.lein-failures
+/debian/files
+/debian/libclucy.debhelper.log
+/debian/libclucy.substvars
+/debian/libclucy/DEBIAN/control
+/debian/libclucy/DEBIAN/md5sums
+/debian/libclucy/usr/share/doc/libclucy/changelog.Debian.gz
+/debian/libclucy/usr/share/doc/libclucy/copyright
