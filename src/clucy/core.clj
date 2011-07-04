@@ -1,6 +1,5 @@
 (ns clucy.core
-  (:require [clojure.java.io :as io])
-  (:import (java.io StringReader)
+  (:import (java.io StringReader File)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
            (org.apache.lucene.document Document Field Field$Index Field$Store)
            (org.apache.lucene.index IndexWriter IndexWriter$MaxFieldLength Term)
@@ -41,7 +40,7 @@
   "Create a new index in a directory on disk."
   [dir-path]
   (atom (struct-map clucy-index
-          :index (NIOFSDirectory. (io/file dir-path))
+          :index (NIOFSDirectory. (File. dir-path))
           :optimize-frequency *optimize-frequency*
           :updates 0)))
 
