@@ -7,7 +7,7 @@ Build-Depends-Indep: openjdk-6-jdk
 Standards-Version: 3.9.2
 Homepage: https://github.com/weavejester/clucy
 
-Package: libclucy
+Package: libclojure-clucy
 Architecture: all
 Depends: clojure1.2 | clojure, openjdk-6-jre | java2-runtime, liblucene2-java
 Description: Clojure interface to the Lucene search engine
