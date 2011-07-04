@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Phil Hagelberg <technomancy@gmail.com>
 Build-Depends: debhelper (>> 8), javahelper (>= 0.32)
 Build-Depends-Indep: openjdk-6-jdk
-Standards-Version: 3.8.3
+Standards-Version: 3.9.2
 Homepage: https://github.com/weavejester/clucy
 
 Package: libclucy
