@@ -31,3 +31,6 @@ binary-indep: build install
 	dh_builddeb -i
 
 binary: binary-indep
+
+get-orig-source:
+	uscan --download-version $(DEB_UPSTREAM_VERSION) --force-download --rename
