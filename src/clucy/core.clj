@@ -11,7 +11,7 @@
            (org.apache.lucene.store NIOFSDirectory RAMDirectory)
            (org.apache.lucene.util Version)))
 
-(def *version* Version/LUCENE_30)
+(def *version* Version/LUCENE_CURRENT)
 (def *analyzer* (StandardAnalyzer. *version*))
 (def *optimize-frequency* 1)
 
