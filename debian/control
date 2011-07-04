@@ -9,6 +9,7 @@ Homepage: https://github.com/weavejester/clucy
 
 Package: libclojure-clucy
 Architecture: all
-Depends: clojure1.2 | clojure, openjdk-6-jre | java2-runtime, liblucene2-java
+Depends: ${java:Depends}, ${misc:Depends}, openjdk-6-jre | java2-runtime, clojure1.2 | clojure, liblucene2-java
+Recommends: ${java:Recommends}
 Description: Clojure interface to the Lucene search engine
  A simple Clojure interface to the Lucene search engine.
