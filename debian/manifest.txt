@@ -1,0 +1,1 @@
+Class-Path: /usr/share/java/clojure.jar /usr/share/java/lucene-core.jar /usr/share/java/lucene-memory.jar /usr/share/java/lucene-highlighter.jar

@@ -6,7 +6,7 @@ JAVA_HOME=/usr/lib/jvm/java-6-openjdk
 	dh $@ --with javahelper
 
 override_jh_build:
-	jar cf clucy.jar -C src .
+	jar cmf debian/manifest.txt clucy.jar -C src .
 
 get-orig-source:
 	uscan --download-version $(DEB_UPSTREAM_VERSION) --force-download --rename
