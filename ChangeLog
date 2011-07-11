@@ -1,0 +1,19 @@
+0.2.2 / 2011-07-03
+
+	* Support versions of Lucene other than 3.0.
+
+0.2.1 / 2011-05-31
+
+	* Expose score, total hits, and max-score metadata.
+
+	* Allow for result highlighting.
+
+0.2.0 / 2011-05-04
+
+	* Add deletion functionality.
+
+	* Accept per-field store/index settings.
+
+0.1.0 / 2010-03-26
+
+	* Initial release.
