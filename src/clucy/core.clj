@@ -11,9 +11,9 @@
            (org.apache.lucene.store NIOFSDirectory RAMDirectory)
            (org.apache.lucene.util Version)))
 
-(def *version* Version/LUCENE_CURRENT)
-(def *analyzer* (StandardAnalyzer. *version*))
-(def *optimize-frequency* 1)
+(def ^{:dynamic true} *version* Version/LUCENE_CURRENT)
+(def ^{:dynamic true} *analyzer* (StandardAnalyzer. *version*))
+(def ^{:dynamic true} *optimize-frequency* 1)
 
 ;; To avoid a dependency on either contrib or 1.2+
 (defn as-str [x]
@@ -26,7 +26,7 @@
     clucy-index :index :optimize-frequency :updates)
 
 ;; flag to indicate a default "_content" field should be maintained
-(def *content* true)
+(def ^{:dynamic true} *content* true)
 
 (defn memory-index
   "Create a new index in RAM."
