@@ -46,7 +46,7 @@ like more fine-grained control over which fields are stored and index,
 add this to the meta-data for your map.
 
     (with-meta {:name "Stever", :job "Writer", :phone "555-212-0202"}
-      {:phone {:store false}})
+      {:phone {:stored false}})
 
 When the map above is saved to the index, the phone field will be
 available for searching but will not be part of map in the search
@@ -59,7 +59,7 @@ Default Search Field
 --------------------
 
 A field called "\_content" that contains all of the map's values is
-stored in the index for each map (excluding fields with {:store false}
+stored in the index for each map (excluding fields with {:stored false}
 in the map's metadata). This provides a default field to run all
 searches against. Anytime you call the search function without
 providing a default search field "\_content" is used.
