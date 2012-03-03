@@ -62,19 +62,28 @@
     index))
 
 (defn- add-field
-  "Add a Field to a Document."
+  "Add a Field to a Document.
+  Following options are allowed for meta-map:
+  :stored - when false, then do not store the field value in the index.
+  :indexed - when false, then do not index the field.
+  :analyzed - when :indexed is enabled use this option to disable/eneble Analyzer for current field.
+  :norms - when :indexed is enabled user this option to disable/enable the storing of norms."
   ([document key value]
      (add-field document key value {}))
 
   ([document key value meta-map]
      (.add document
            (Field. (as-str key) (as-str value)
-                   (if (and meta-map (= false (:stored meta-map)))
+                   (if (false? (:stored meta-map))
                      Field$Store/NO
                      Field$Store/YES)
-                   (if (and meta-map (= false (:indexed meta-map)))
+                   (if (false? (:indexed meta-map))
                      Field$Index/NO
-                     Field$Index/ANALYZED)))))
+                     (case [(false? (:analyzed meta-map)) (false? (:norms meta-map))]
+                       [false false] Field$Index/ANALYZED
+                       [true false] Field$Index/NOT_ANALYZED
+                       [false true] Field$Index/ANALYZED_NO_NORMS
+                       [true true] Field$Index/NOT_ANALYZED_NO_NORMS))))))
 
 (defn- map-stored
   "Returns a hash-map containing all of the values in the map that
