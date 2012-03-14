@@ -5,6 +5,12 @@
                  [org.apache.lucene/lucene-core "3.0.3"]
                  [org.apache.lucene/lucene-highlighter "3.0.3"]]
   :dev-dependencies [[lein-multi "1.1.0"]]
-  :multi-deps {"lucene2" [[org.clojure/clojure "1.2.1"]
-                          [org.apache.lucene/lucene-core "2.9.2"]
-                          [org.apache.lucene/lucene-highlighter "2.9.2"]]})
+  :multi-deps {"1.2-lucene2" [[org.clojure/clojure "1.2.1"]
+                              [org.apache.lucene/lucene-core "2.9.2"]
+                              [org.apache.lucene/lucene-highlighter "2.9.2"]]
+               "1.3-lucene2" [[org.clojure/clojure "1.3.0"]
+                              [org.apache.lucene/lucene-core "2.9.2"]
+                              [org.apache.lucene/lucene-highlighter "2.9.2"]]
+               "1.2-lucene3" [[org.clojure/clojure "1.2.1"]
+                              [org.apache.lucene/lucene-core "3.0.3"]
+                              [org.apache.lucene/lucene-highlighter "3.0.3"]]})
