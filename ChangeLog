@@ -1,3 +1,7 @@
+0.3.0 / 2012-04-10
+
+	* Support for Lucene 3.5.0
+
 0.2.2 / 2011-07-03
 
 	* Support versions of Lucene other than 3.0.

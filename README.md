@@ -1,4 +1,15 @@
+Clucy
+=====
+
 Clucy is a Clojure interface to [Lucene](http://lucene.apache.org/).
+
+Installation
+------------
+
+To install Clucy, add the following dependency to your `project.clj`
+file:
+
+    [clucy "0.3.0"]
 
 Usage
 -----
