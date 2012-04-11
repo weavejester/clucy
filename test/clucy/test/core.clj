@@ -33,7 +33,10 @@
   (testing "search fn"
     (let [index (memory-index)]
       (doseq [person people] (add index person))
-      (is (== 1 (count (search index "name:miles" 10))))))
+      (is (== 1 (count (search index "name:miles" 10))))
+      (is (== 1 (count (search index "name:miles age:100" 10))))
+      (is (== 0 (count (search index "name:miles AND age:100" 10))))
+      (is (== 0 (count (search index "name:miles age:100" 10 :default-operator :and))))))
 
   (testing "search-and-delete fn"
     (let [index (memory-index)]
