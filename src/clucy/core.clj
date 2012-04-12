@@ -160,12 +160,15 @@ fragments."
 
 (defn search
   "Search the supplied index with a query string."
-  [index query max-results & {:keys [highlight default-field]}]
+  [index query max-results & {:keys [highlight default-field default-operator]}]
   (if (every? false? [default-field *content*])
     (throw (Exception. "No default search field specified"))
     (let [default-field (or default-field :_content)]
       (with-open [searcher (IndexSearcher. index)]
-        (let [parser (QueryParser. *version* (as-str default-field) *analyzer*)
+        (let [parser (doto (QueryParser. *version* (as-str default-field) *analyzer*)
+                       (.setDefaultOperator (case (or default-operator :or)
+                                                  :and QueryParser/AND_OPERATOR
+                                                  :or  QueryParser/OR_OPERATOR)))
               query  (.parse parser query)
               hits   (.search searcher query max-results)
               highlighter (make-highlighter query searcher highlight)]
