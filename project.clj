@@ -4,6 +4,8 @@
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [org.apache.lucene/lucene-core "3.5.0"]
                  [org.apache.lucene/lucene-highlighter "3.5.0"]]
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dev-dependencies [[lein-multi "1.1.0"]]
   :multi-deps {"1.2-lucene2" [[org.clojure/clojure "1.2.1"]
                               [org.apache.lucene/lucene-core "2.9.2"]
