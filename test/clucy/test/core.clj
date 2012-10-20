@@ -1,6 +1,7 @@
 (ns clucy.test.core
   (:use clucy.core
-        clojure.test))
+        clojure.test
+        [clojure.set :only [intersection]]))
 
 (def people [{:name "Miles" :age 36}
              {:name "Emily" :age 0.3}
@@ -59,4 +60,13 @@
       (is (true? (every? pos? (map (comp :_score meta) results))))
       (is (= 2 (:_total-hits (meta results))))
       (is (pos? (:_max-score (meta results))))
-      (is (= (count people) (:_total-hits (meta (search index "*:*" 2))))))))
+      (is (= (count people) (:_total-hits (meta (search index "*:*" 2)))))))
+
+  (testing "pagination"
+    (let [index (memory-index)]
+      (doseq [person people] (add index person))
+      (is (== 3 (count (search index "m*" 10 :page 0 :results-per-page 3))))
+      (is (== 1 (count (search index "m*" 10 :page 1 :results-per-page 3))))
+      (is (empty? (intersection
+                    (set (search index "m*" 10 :page 0 :results-per-page 3))
+                    (set (search index "m*" 10 :page 1 :results-per-page 3))))))))

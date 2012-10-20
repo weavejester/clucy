@@ -160,7 +160,9 @@ fragments."
 
 (defn search
   "Search the supplied index with a query string."
-  [index query max-results & {:keys [highlight default-field default-operator]}]
+  [index query max-results
+   & {:keys [highlight default-field default-operator page results-per-page]
+      :or {page 0 results-per-page max-results}}]
   (if (every? false? [default-field *content*])
     (throw (Exception. "No default search field specified"))
     (let [default-field (or default-field :_content)]
@@ -171,9 +173,11 @@ fragments."
                                                   :or  QueryParser/OR_OPERATOR)))
               query  (.parse parser query)
               hits   (.search searcher query max-results)
-              highlighter (make-highlighter query searcher highlight)]
+              highlighter (make-highlighter query searcher highlight)
+              start (* page results-per-page)
+              end (min (+ start results-per-page) (.totalHits hits))]
           (doall
-           (with-meta (for [hit (.scoreDocs hits)]
+           (with-meta (for [hit (map (partial aget (.scoreDocs hits)) (range start end))]
                         (document->map (.doc searcher (.doc hit))
                                        (.score hit)
                                        highlighter))
