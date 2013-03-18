@@ -1,6 +1,8 @@
 Clucy
 =====
 
+[![Build Status](https://secure.travis-ci.org/weavejester/clucy.png?branch=master)](http://travis-ci.org/weavejester/clucy)
+
 Clucy is a Clojure interface to [Lucene](http://lucene.apache.org/).
 
 Installation
