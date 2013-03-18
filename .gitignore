@@ -1,5 +1,7 @@
-classes
-lib
+/classes
+/lib
+/target
 clucy*.jar
 pom.xml
-/.lein-failures
+pom.xml.asc
+.lein-failures
