@@ -9,7 +9,7 @@ Installation
 To install Clucy, add the following dependency to your `project.clj`
 file:
 
-    [clucy "0.3.0"]
+    [clucy "0.3.1"]
 
 Usage
 -----
