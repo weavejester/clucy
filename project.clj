@@ -12,6 +12,4 @@
              :1.5  {:dependencies [[org.clojure/clojure "1.5.0"]]}
              :1.6  {:dependencies [[org.clojure/clojure "1.6.0-master-SNAPSHOT"]]}}
   :codox {:src-dir-uri "http://github/weavejester/clucy/blob/master"
-          :src-linenum-anchor-prefix "L"}
-  ;; :warn-on-reflection true
-  )
+          :src-linenum-anchor-prefix "L"})
