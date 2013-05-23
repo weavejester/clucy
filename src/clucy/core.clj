@@ -1,7 +1,11 @@
 (ns clucy.core
   (:import (java.io StringReader File)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
-           (org.apache.lucene.document Document Field Field$Index Field$Store)
+           (org.apache.lucene.analysis PerFieldAnalyzerWrapper KeywordAnalyzer
+                                       SimpleAnalyzer StopAnalyzer
+                                       WhitespaceAnalyzer)
+           (org.apache.lucene.document Document Field NumericField
+                                       Field$Index Field$Store)
            (org.apache.lucene.index IndexWriter IndexWriter$MaxFieldLength Term)
            (org.apache.lucene.queryParser QueryParser)
            (org.apache.lucene.search BooleanClause BooleanClause$Occur
@@ -22,6 +26,18 @@
 
 ;; flag to indicate a default "_content" field should be maintained
 (def ^{:dynamic true} *content* true)
+
+(def analyzers {:keyword (KeywordAnalyzer.)
+                :whitespace (WhitespaceAnalyzer.)
+                :standard (StandardAnalyzer. *version*)
+                :stop (StopAnalyzer. *version*)
+                :simple (SimpleAnalyzer.)})
+
+(defn per-field-analyzer [fields & [analyzer]]
+  (let [wrapper (PerFieldAnalyzerWrapper. (or analyzer *analyzer*))]
+    (doseq [[field analyzer] fields]
+      (.addAnalyzer wrapper (name field) (or (analyzers analyzer) analyzer)))
+    wrapper))
 
 (defn memory-index
   "Create a new index in RAM."
@@ -45,11 +61,12 @@
   Following options are allowed for meta-map:
   :stored - when false, then do not store the field value in the index.
   :indexed - when false, then do not index the field.
-  :analyzed - when :indexed is enabled use this option to disable/eneble Analyzer for current field.
-  :norms - when :indexed is enabled user this option to disable/enable the storing of norms."
+  :analyzed - when :indexed is enabled use this option to
+              disable/enable Analyzer for current field.
+  :norms - when :indexed is enabled user this option to
+           disable/enable the storing of norms."
   ([document key value]
      (add-field document key value {}))
-
   ([document key value meta-map]
      (.add document
            (Field. (as-str key) (as-str value)
@@ -167,7 +184,8 @@ fragments."
     (throw (Exception. "No default search field specified"))
     (let [default-field (or default-field :_content)]
       (with-open [searcher (IndexSearcher. index)]
-        (let [parser (doto (QueryParser. *version* (as-str default-field) *analyzer*)
+        (let [parser (doto (QueryParser. *version* (as-str default-field)
+                                         *analyzer*)
                        (.setDefaultOperator (case (or default-operator :or)
                                                   :and QueryParser/AND_OPERATOR
                                                   :or  QueryParser/OR_OPERATOR)))

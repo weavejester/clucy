@@ -70,3 +70,8 @@
       (is (empty? (intersection
                     (set (search index "m*" 10 :page 0 :results-per-page 3))
                     (set (search index "m*" 10 :page 1 :results-per-page 3))))))))
+
+(deftest test-per-field
+  (let [index (memory-index)]
+    (add index {:artifact "lein-pprint" :version "1.0.0"})
+    (is (= 1 (count (search index "artifact:lein-pprint" 10))))))
